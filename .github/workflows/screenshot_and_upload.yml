@@ -1,0 +1,62 @@
+name: Banner screenshots and upload
+
+on:
+  workflow_dispatch:
+  
+run-name: Banner screenshots and upload
+
+jobs:
+  login:
+    environment: ScreenshotAutomation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: ./.github/actions/python-setup
+        
+      - name: Setup Font
+        uses: ./.github/actions/font-setup
+
+      - name: Download icons from google drive
+        uses: ./.github/actions/downloadFromGoogleDrive
+        with:
+          credential_json: ${{ secrets.GOOGLE_CREDENTIAL_JSON }}
+          folder_id: ${{ vars.ICON_FOLDER_ID }}
+          token_base64: ${{ secrets.GOOGLE_TOKEN_PICKLE }}
+          download_path: ./icons
+          
+      - name: Cache Playwright user data
+        uses: actions/cache@v4
+        with:
+          path: state.json
+          key: ${{ runner.os }}-playwright-state-json
+
+      - name: Capture banner screenshots
+        run: |
+          python executor/banner_screenshot.py \
+          -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
+          -p "${{ secrets.SHOPBACK_PASSWORD }}"
+          
+      - name: Rename banners
+        run: |
+          python executor/rename_banner.py
+          
+      - name: Upload renamed banners to Google Drive
+        uses: ./.github/actions/uploadToGoogleDrive
+        with:
+          credential_json: ${{ secrets.GOOGLE_CREDENTIAL_JSON }}
+          folder_id: ${{ vars.BANNER_FOLDER_ID }}
+          token_base64: ${{ secrets.GOOGLE_TOKEN_PICKLE }}
+          local_folder: ./rename_banners
+          
+      - name: Upload unknown icons to Google Drive
+        uses: ./.github/actions/uploadToGoogleDrive
+        with:
+          credential_json: ${{ secrets.GOOGLE_CREDENTIAL_JSON }}
+          folder_id: ${{ vars.UNKNOWNICON_FOLDER_ID }}
+          token_base64: ${{ secrets.GOOGLE_TOKEN_PICKLE }}
+          local_folder: ./unknow_icons
+          

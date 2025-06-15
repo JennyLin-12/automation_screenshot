@@ -1,0 +1,23 @@
+# .github/actions/font-setup/action.yml
+name: 'Font setup'
+description: 'Install font'
+
+runs:
+  using: 'composite'
+  steps:
+    # 快取 fonts-noto 的字型檔，以及 apt 的 .deb 檔（可選）
+    - name: Restore font cache
+      uses: actions/cache@v4
+      with:
+        # 快取兩個路徑：一個是 apt 下載的 .deb，一個是解包後的字型資料夾
+        path: |
+          /var/cache/apt/archives
+          /usr/share/fonts/truetype/noto
+        key: ${{ runner.os }}-font-cache-noto
+    # 如果剛剛 restore 不到，就執行安裝
+    - name: Install fonts if needed
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y fonts-noto-cjk fonts-noto-core fonts-noto-extra
+      shell: bash

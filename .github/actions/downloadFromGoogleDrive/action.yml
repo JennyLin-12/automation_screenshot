@@ -1,0 +1,27 @@
+name: "Download from google drive"
+
+inputs:
+  credential_json:
+    description: "Google credential json"
+    required: true
+  folder_id:
+    description: "Google drive folder id"
+    required: true
+  token_base64:
+    description: "Token.pickle base64"
+    required: true
+  download_path:
+    description: "Local download path"
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run download
+      run: |
+        python executor/download_google_drive.py \
+        -j "${{ inputs.credential_json }}" \
+        -f "${{ inputs.folder_id }}" \
+        --token-base64 "${{ inputs.token_base64 }}" \
+        -d "${{ inputs.download_path }}"
+      shell: bash

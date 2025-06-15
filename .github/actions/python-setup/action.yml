@@ -1,0 +1,28 @@
+# .github/actions/python-setup/action.yml
+name: 'Python Setup'
+description: 'Setup Python (with built-in cache), install deps'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11.11'
+        cache: 'pip'            # 內建對 ~/.cache/pip 的快取
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+      shell: bash
+
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-browsers-${{ hashFiles('**/playwright.config.*',   '**/package-lock.json', '**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-playwright-browsers-
+      
+    - name: Install Playwright browsers
+      run: playwright install
+      shell: bash

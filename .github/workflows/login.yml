@@ -1,0 +1,25 @@
+name: Login shopback
+
+on:
+  workflow_dispatch:
+  
+run-name: Login shopback
+
+jobs:
+  login:
+    environment: ScreenshotAutomation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: ./.github/actions/python-setup
+
+      - name: Login to ShopBack
+        uses: ./.github/actions/login
+        with:
+          account: ${{ secrets.SHOPBACK_ACCOUNT }}
+          password: ${{ secrets.SHOPBACK_PASSWORD }}
+
