@@ -20,6 +20,15 @@ jobs:
       - name: Setup Font
         uses: ./.github/actions/font-setup
 
+      - name: Cache token.pickle
+        id: cache-token
+        uses: actions/cache@v4
+        with:
+          path: token.pickle
+          key: token-cache-v1-${{ hashFiles('token.pickle') }}
+          restore-keys: |
+            token-cache-v1-
+
       - name: Download icons from google drive
         uses: ./.github/actions/downloadFromGoogleDrive
         with:

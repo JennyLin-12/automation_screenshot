@@ -43,11 +43,20 @@ jobs:
             python executor/full_page_screenshot.py \
             -u 'https://www.shopback.com.tw/seemore-coupon-20' \
             -n 'web_coupon'
+            
+      - name: Cache token.pickle
+        id: cache-token
+        uses: actions/cache@v4
+        with:
+          path: token.pickle
+          key: token-cache-v1-${{ hashFiles('token.pickle') }}
+          restore-keys: |
+            token-cache-v1-
           
       - name: Upload screenshots to Google Drive
         uses: ./.github/actions/uploadToGoogleDrive
         with:
           credential_json: ${{ secrets.GOOGLE_CREDENTIAL_JSON }}
-          folder_id: ${{ vars.UNKNOWNICON_FOLDER_ID }}
+          folder_id: ${{ vars.OTHER_FOLDER_ID }}
           token_base64: ${{ secrets.GOOGLE_TOKEN_PICKLE }}
           local_folder: ./full_page_screenshot

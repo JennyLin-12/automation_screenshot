@@ -88,10 +88,13 @@ def main(args):
     print("[Main] 啟動 Google Drive 上傳工具")
 
     if args.token_base64:
-        print("[Main] 偵測到 base64 編碼的 token，解碼並寫入 token.pickle")
-        token_bytes = base64.b64decode(args.token_base64)
-        with open('token.pickle', 'wb') as f:
-            f.write(token_bytes)
+        if os.path.exists('token.pickle'):
+            print("[Main] 偵測到 token.pickle 已存在，跳過 base64 解碼覆蓋")
+        else:
+            print("[Main] 偵測到 base64 編碼的 token，解碼並寫入 token.pickle")
+            token_bytes = base64.b64decode(args.token_base64)
+            with open('token.pickle', 'wb') as f:
+                f.write(token_bytes)
 
     # 認證
     try:
