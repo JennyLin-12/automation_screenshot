@@ -22,25 +22,25 @@ jobs:
         
       - name: Screenshot travel-deals page
         run: |
-            python excutor/full_page_screenshot.py \
+            python executor/full_page_screenshot.py \
             -u 'https://www.shopback.com.tw/travel-deals' \
             -n 'campaign page_Travel'
             
       - name: Screenshot upsize--daily page
         run: |
-            python excutor/full_page_screenshot.py \
+            python executor/full_page_screenshot.py \
             -u 'https://www.shopback.com.tw/upsize--daily' \
             -n 'web store listing'
             
       - name: Screenshot new-merchants page
         run: |
-            python excutor/full_page_screenshot.py \
+            python executor/full_page_screenshot.py \
             -u 'https://www.shopback.com.tw/new-merchants' \
             -n 'web_newmerchant'
 
       - name: Screenshot seemore-coupon page
         run: |
-            python excutor/full_page_screenshot.py \
+            python executor/full_page_screenshot.py \
             -u 'https://www.shopback.com.tw/seemore-coupon-20' \
             -n 'web_coupon'
           
