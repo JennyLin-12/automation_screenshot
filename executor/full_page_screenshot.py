@@ -1,15 +1,19 @@
 import os
 import time
 import argparse
+import asyncio
 from datetime import datetime
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
+from login import launch_and_login, HOME_URL
 
 # 取得這支 script 的資料夾
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # 圖片儲存資料夾
 OUTPUT_DIR = os.path.join(script_dir, '..', 'full_page_screenshot')
 
-def capture_full_page_with_playwright(
+async def capture_full_page_with_playwright(
+    email: str,
+    password: str,
     url: str,
     output_name: str,
     scroll_pause: float = 2.0
@@ -20,42 +24,48 @@ def capture_full_page_with_playwright(
     filename = f"{date_str}_{output_name}.png"
     output_path = f"{OUTPUT_DIR}/{filename}"
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(url)
-        time.sleep(scroll_pause)
+    async with async_playwright() as p:
+        page = await launch_and_login(email=email, password=password)
+        print("[Screenshot] 登入完成，開始截圖流程。")
+        
+        # 前往指定網址
+        await page.goto(url)
+        await asyncio.sleep(scroll_pause)
 
-        prev_height = page.evaluate("() => document.body.scrollHeight")
+        prev_height = await page.evaluate("() => document.body.scrollHeight")
 
         while True:
-            page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
-            time.sleep(scroll_pause)
-            new_height = page.evaluate("() => document.body.scrollHeight")
+            await page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(scroll_pause)
+            new_height = await page.evaluate("() => document.body.scrollHeight")
             if new_height == prev_height:
                 break
             prev_height = new_height
 
         # 取得整個文件高度
-        total_height = page.evaluate("() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)")
+        total_height = await page.evaluate("() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)")
         # 設定 viewport 高度
-        page.set_viewport_size({"width": 1920, "height": total_height})
+        await page.set_viewport_size({"width": 1920, "height": total_height})
 
         # full_page=True 會自動把整頁延展到 screenshot
-        page.screenshot(path=output_path, full_page=True)
-        print(f"Saved full-page screenshot to {output_path}")
+        await page.screenshot(path=output_path, full_page=True)
+        print("[Screenshot] 截圖存到 {output_path}。")
 
-        browser.close()
+        await page.context.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="用 Playwright 截取整頁並自動滾動 (full-page screenshot)"
     )
+    parser.add_argument('-a', '--account', required=True, help='ShopBack login email')
+    parser.add_argument('-p', '--password', required=True, help='ShopBack login password')
     parser.add_argument('-u', '--url', required=True, help='要截圖的頁面 URL')
     parser.add_argument('-n', '--output_name', required=True, help='自訂輸出檔名前綴 (會套入 yyyy_mmdd_... page_Travel.png)')
     args = parser.parse_args()
     
-    capture_full_page_with_playwright(
+    asyncio.run(capture_full_page_with_playwright(
+        email=args.account,
+        password=args.password,
         url=args.url,
         output_name=args.output_name
-    )
+    ))
