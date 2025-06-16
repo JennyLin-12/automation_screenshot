@@ -1,0 +1,54 @@
+name: Rewards section screenshots and upload
+
+on:
+  schedule:
+    # 台北 08:00 = UTC 00:00
+    - cron: '0 0 * * *'
+    
+  workflow_dispatch:
+  
+run-name: Rewards section screenshots and upload
+
+jobs:
+  login:
+    environment: ScreenshotAutomation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: ./.github/actions/python-setup
+        
+      - name: Setup Font
+        uses: ./.github/actions/font-setup
+          
+      - name: Cache Playwright user data
+        uses: actions/cache@v4
+        with:
+          path: state.json
+          key: ${{ runner.os }}-playwright-state-json
+
+      - name: Capture rewards_section screenshots
+        run: |
+          python executor/rewards_section_screenshot.py \
+          -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
+          -p "${{ secrets.SHOPBACK_PASSWORD }}"
+          
+      - name: Cache token.pickle
+        id: cache-token
+        uses: actions/cache@v4
+        with:
+          path: token.pickle
+          key: token-cache-v1-${{ hashFiles('token.pickle') }}
+          restore-keys: |
+            token-cache-v1-
+          
+      - name: Upload renamed banners to Google Drive
+        uses: ./.github/actions/uploadToGoogleDrive
+        with:
+          credential_json: ${{ secrets.GOOGLE_CREDENTIAL_JSON }}
+          folder_id: ${{ vars.OTHER_FOLDER_ID }}
+          token_base64: ${{ secrets.GOOGLE_TOKEN_PICKLE }}
+          local_folder: ./rewards_section_screenshot
