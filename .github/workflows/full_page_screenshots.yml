@@ -24,25 +24,33 @@ jobs:
         run: |
             python executor/full_page_screenshot.py \
             -u 'https://www.shopback.com.tw/travel-deals' \
-            -n 'campaign page_Travel'
+            -n 'campaign page_Travel' \
+            -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
+            -p "${{ secrets.SHOPBACK_PASSWORD }}"
             
       - name: Screenshot upsize--daily page
         run: |
             python executor/full_page_screenshot.py \
             -u 'https://www.shopback.com.tw/upsize--daily' \
-            -n 'web store listing'
+            -n 'web store listing' \
+            -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
+            -p "${{ secrets.SHOPBACK_PASSWORD }}"
             
       - name: Screenshot new-merchants page
         run: |
             python executor/full_page_screenshot.py \
             -u 'https://www.shopback.com.tw/new-merchants' \
-            -n 'web_newmerchant'
+            -n 'web_newmerchant' \
+            -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
+            -p "${{ secrets.SHOPBACK_PASSWORD }}"
 
       - name: Screenshot seemore-coupon page
         run: |
             python executor/full_page_screenshot.py \
             -u 'https://www.shopback.com.tw/seemore-coupon-20' \
-            -n 'web_coupon'
+            -n 'web_coupon' \
+            -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
+            -p "${{ secrets.SHOPBACK_PASSWORD }}"
             
       - name: Cache token.pickle
         id: cache-token
