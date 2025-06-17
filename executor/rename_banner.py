@@ -13,7 +13,7 @@ BANNERS_DIR  = os.path.join(script_dir, '..', 'banners')         # 原始大圖�
 OUTPUT_DIR   = os.path.join(script_dir, '..', 'rename_banners')  # 處理後輸出資料夾
 CROP_SCRIPT  = os.path.join(script_dir, 'crop_icon.py')          # 你的裁切腳本
 
-THRESHOLD    = 0.99                                              # matchTemplate 相似度門檻
+THRESHOLD    = 0.95                                              # matchTemplate 相似度門檻
 
 # 確保輸出資料夾存在
 os.makedirs(OUTPUT_DIR, exist_ok=True)
