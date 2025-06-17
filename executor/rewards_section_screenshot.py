@@ -59,7 +59,7 @@ async def capture_rewards_section(email: str, password: str):
             }"""
         )
         
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(2)
 
         # 截圖並儲存
         await page.screenshot(path=output_path, full_page=False)

@@ -46,6 +46,8 @@ async def capture_full_page_with_playwright(
         total_height = await page.evaluate("() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)")
         # 設定 viewport 高度
         await page.set_viewport_size({"width": 1920, "height": total_height})
+        
+        await asyncio.sleep(2)
 
         # full_page=True 會自動把整頁延展到 screenshot
         await page.screenshot(path=output_path, full_page=True)
