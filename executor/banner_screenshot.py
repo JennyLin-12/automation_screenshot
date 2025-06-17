@@ -29,6 +29,8 @@ async def take_screenshots(email: str, password: str):
         await page.wait_for_selector('.carousel-container', timeout=10000)
         print(f"[Screenshot] 已導航至 {HOME_URL} 並偵測到 carousel-container")
         
+        await page.wait_for_timeout(500)
+        
         selector = (
             'div.bg_sbds-background-color-dark'
             '.h_0'
@@ -48,8 +50,6 @@ async def take_screenshots(email: str, password: str):
         # 從 HTML 結構中計算輪播內的圖片數量
         img_count = await wrapper.locator('img').count()
         print(f"[Screenshot] 輪播中共偵測到 {img_count} 張圖片")
-        
-        await page.wait_for_timeout(500)
 
         # 依照圖片數進行截圖，等候自動輪播切換
         for idx in range(img_count):
