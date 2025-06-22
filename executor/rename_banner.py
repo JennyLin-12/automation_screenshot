@@ -29,8 +29,10 @@ for fn in os.listdir(ICONS_DIR):
             icons.append((name, icon))
 print(f"[INFO] 載入 icons：{[n for n,_ in icons]}")
 
+index = 0
 # 2) 逐張處理 banner
 for fn in sorted(os.listdir(BANNERS_DIR)):
+    index += 1
     if not fn.lower().endswith(('.png','.jpg','.jpeg')):
         continue
 
@@ -70,12 +72,12 @@ for fn in sorted(os.listdir(BANNERS_DIR)):
         print(f"[MATCH] {fn} → {new_fn} (score={best_score:.4f})")
         shutil.copy(banner_path, os.path.join(OUTPUT_DIR, new_fn))
 
-    # 4b) match 失敗 → 不改名，複製原檔並呼叫 crop_icon.py
+    # 4b) match 失敗 → 改名不包含品牌，複製原檔並呼叫 crop_icon.py
     else:
-        print(f"[NO MATCH] {fn} (best={best_name}, score={best_score:.4f})")
+        new_fn = f"{date_str}_web_banner_{index}{ext}"
+        print(f"[NO MATCH] {fn} → {new_fn} (best={best_name}, score={best_score:.4f})")
         # 先把原 banner 複製到 OUTPUT_DIR
-        dst_orig = os.path.join(OUTPUT_DIR, fn)
-        shutil.copy(banner_path, dst_orig)
+        shutil.copy(banner_path, os.path.join(OUTPUT_DIR, new_fn))
 
         # 再用 subprocess 呼叫 crop_icon.py
         cmd = ['python', CROP_SCRIPT, banner_path]
