@@ -2,7 +2,7 @@ name: Full page screenshots
 
 on:
   schedule:
-    - cron: '15 18 * * *'
+    - cron: '15 22 * * *'
     
   workflow_dispatch:
   

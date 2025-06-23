@@ -3,6 +3,7 @@ import time
 import argparse
 import asyncio
 from datetime import datetime
+import pytz
 from playwright.async_api import async_playwright
 from login import launch_and_login, HOME_URL
 
@@ -19,7 +20,15 @@ async def capture_full_page_with_playwright(
     scroll_pause: float = 2.0
 ):
     # 1. 產生日期字串 yyyy_mmdd
-    date_str = datetime.now().strftime("%Y_%m%d")
+    # 指定時區名稱（例：Asia/Taipei）
+    tz = pytz.timezone("Asia/Taipei")
+
+    # 取得現在時間（含指定時區）
+    now = datetime.now(tz)
+    
+    # 取得當前日期字串 (YYYY_MMDD)
+    date_str = now.strftime("%Y_%m%d")
+    
     # 2. 組成檔名
     filename = f"{date_str}_{output_name}.png"
     output_path = f"{OUTPUT_DIR}/{filename}"

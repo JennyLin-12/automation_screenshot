@@ -3,6 +3,7 @@ import cv2
 import shutil
 import subprocess
 from datetime import datetime
+import pytz
 
 # === 參數設定 ===
 # 取得這支 script 的資料夾
@@ -63,8 +64,14 @@ for fn in sorted(os.listdir(BANNERS_DIR)):
     # 取得副檔名
     _, ext = os.path.splitext(fn)
 
+    # 指定時區名稱（例：Asia/Taipei）
+    tz = pytz.timezone("Asia/Taipei")
+
+    # 取得現在時間（含指定時區）
+    now = datetime.now(tz)
+    
     # 取得當前日期字串 (YYYY_MMDD)
-    date_str = datetime.now().strftime("%Y_%m%d")
+    date_str = now.strftime("%Y_%m%d")
 
     # 4a) match 成功 → 複製並改名
     if best_score >= THRESHOLD:

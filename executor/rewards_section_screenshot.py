@@ -3,6 +3,7 @@ import time
 import asyncio
 import argparse
 from datetime import datetime
+import pytz
 from playwright.async_api import async_playwright
 from login import launch_and_login, HOME_URL
 
@@ -13,7 +14,10 @@ OUTPUT_DIR = os.path.join(script_dir, '..', 'rewards_section_screenshot')
 
 async def capture_rewards_section(email: str, password: str):
     # 1. 產生日期字串 yyyy_mmdd
-    date_str = datetime.now().strftime("%Y_%m%d")
+    
+    tz = pytz.timezone("Asia/Taipei")
+    now = datetime.now(tz)
+    date_str = now.strftime("%Y_%m%d")
     
     filename = f"{date_str}_top deal.png"
     output_path = f"{OUTPUT_DIR}/{filename}"
