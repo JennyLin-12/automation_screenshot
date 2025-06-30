@@ -4,6 +4,7 @@ import shutil
 import subprocess
 from datetime import datetime
 import pytz
+import re
 
 # === 參數設定 ===
 # 取得這支 script 的資料夾
@@ -75,6 +76,10 @@ for fn in sorted(os.listdir(BANNERS_DIR)):
 
     # 4a) match 成功 → 複製並改名
     if best_score >= THRESHOLD:
+        m = re.match(r'^(.+)_\d+$', best_name)
+        if m:
+            best_name = m.group(1)
+            
         new_fn = f"{date_str}_web_banner_{best_name}{ext}"
         print(f"[MATCH] {fn} → {new_fn} (score={best_score:.4f})")
         shutil.copy(banner_path, os.path.join(OUTPUT_DIR, new_fn))
