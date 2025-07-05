@@ -10,10 +10,10 @@ from PIL import Image
 script_dir = os.path.dirname(os.path.abspath(__file__))
 DST_DIR    = os.path.join(script_dir, '..', 'unknow_icons')  # 裁切後 icon 存放資料夾
 # 裁切框 (x, y, width, height)，根據實際 icon 在大圖位置調整
-CROP_X  = 170
-CROP_Y  = 187
-CROP_W  = 167
-CROP_H  = 50
+CROP_X  = 150
+CROP_Y  = 160
+CROP_W  = 200
+CROP_H  = 70
 
 # 建立輸出資料夾（若不存在）
 os.makedirs(DST_DIR, exist_ok=True)

@@ -47,9 +47,9 @@ async def take_screenshots(email: str, password: str):
         wrapper = page.locator('.carousel-container').first
         print("[Screenshot] 定位 carousel-container 區塊")
 
-        # 從 HTML 結構中計算輪播內的圖片數量
-        img_count = await wrapper.locator('img').count()
-        print(f"[Screenshot] 輪播中共偵測到 {img_count} 張圖片")
+        # 計算輪播項目的數量（每個 banner 一個 div）
+        img_count = await wrapper.locator('> div[data-ui-element-name="hero banner"]').count()
+        print(f"[Screenshot] 輪播中共偵測到 {img_count} 個 banner 項目")
 
         # 依照圖片數進行截圖，等候自動輪播切換
         for idx in range(img_count):
