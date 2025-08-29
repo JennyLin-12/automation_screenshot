@@ -7,17 +7,15 @@ run-name: Full page screenshots
 
 jobs:
   success:
-    environment: ScreenshotAutomation
     uses: JohnsonWang13/github_action_tools/.github/workflows/Send_message_to_slack.yml@master
     with:
       is_success: true
-      channel_id: ${{ vars.SLACK_CHANNEL_ID }}
+      channel_id: C09CQQXM5PW
     secrets: inherit
      
   fail:
-    environment: ScreenshotAutomation
     uses: JohnsonWang13/github_action_tools/.github/workflows/Send_message_to_slack.yml@master
     secrets: inherit
     with:
       is_success: false
-      channel_id: ${{ vars.SLACK_CHANNEL_ID }}
+      channel_id: C09CQQXM5PW
