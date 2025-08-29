@@ -9,7 +9,7 @@ on:
 run-name: Banner screenshots and upload
 
 jobs:
-  login:
+  screenshot:
     environment: ScreenshotAutomation
     runs-on: ubuntu-latest
     
@@ -72,3 +72,33 @@ jobs:
           token_base64: ${{ secrets.GOOGLE_TOKEN_PICKLE }}
           local_folder: ./unknow_icons
           
+  export-env:
+    runs-on: ubuntu-latest
+    environment: ScreenshotAutomation
+    outputs:
+      slack-channel-id: ${{ steps.set-vars.outputs.channel_id }}
+    steps:
+    - name: Export vars
+      id: set-vars
+      run: |
+        echo "channel_id=${{ vars.SLACK_CHANNEL_ID }}" >> $GITHUB_OUTPUT
+            
+  success:
+    needs: [export-env, screenshot]
+    if success()
+    uses: JohnsonWang13/github_action_tools/.github/workflows/Send_message_to_slack.yml@master
+    with:
+      is_success: true
+      channel_id: ${{ needs.export-env.outputs.slack-channel-id }}
+    secrets:
+      SLACK_BOT_OAUTH_TOKEN: ${{ secrets.SLACK_BOT_OAUTH_TOKEN }}
+     
+  fail:
+    needs: [export-env, screenshot]
+    if failure()
+    uses: JohnsonWang13/github_action_tools/.github/workflows/Send_message_to_slack.yml@master
+    with:
+      is_success: false
+      channel_id: ${{ needs.export-env.outputs.slack-channel-id }}
+    secrets:
+      SLACK_BOT_OAUTH_TOKEN: ${{ secrets.SLACK_BOT_OAUTH_TOKEN }}
