@@ -1,9 +1,9 @@
-name: Full page screenshots
+name: CI Test
 
 on:
   workflow_dispatch:
   
-run-name: Full page screenshots
+run-name: CI-Test
 
 jobs:
 
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ScreenshotAutomation
     outputs:
-    slack-channel-id: ${{ steps.set-vars.outputs.channel_id }}
+      slack-channel-id: ${{ steps.set-vars.outputs.channel_id }}
     steps:
     - name: Export vars
       id: set-vars
