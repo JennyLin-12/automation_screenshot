@@ -19,6 +19,7 @@ jobs:
         echo "channel_id=${{ vars.SLACK_CHANNEL_ID }}" >> $GITHUB_OUTPUT
             
   success:
+    needs: [export-env]
     uses: JohnsonWang13/github_action_tools/.github/workflows/Send_message_to_slack.yml@master
     with:
       is_success: true
@@ -27,6 +28,7 @@ jobs:
       SLACK_BOT_OAUTH_TOKEN: ${{ secrets.SLACK_BOT_OAUTH_TOKEN }}
      
   fail:
+    needs: [export-env]
     uses: JohnsonWang13/github_action_tools/.github/workflows/Send_message_to_slack.yml@master
     with:
       is_success: false
