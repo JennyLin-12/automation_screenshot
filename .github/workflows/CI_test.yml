@@ -19,3 +19,5 @@ jobs:
     with:
       is_success: false
       channel_id: C09CQQXM5PW
+    secrets:
+      SLACK_BOT_OAUTH_TOKEN: ${{ secrets.SLACK_BOT_OAUTH_TOKEN }}
