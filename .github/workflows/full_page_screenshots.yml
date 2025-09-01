@@ -94,7 +94,7 @@ jobs:
             
   success:
     needs: [export-env, screenshots]
-    if success()
+    if: success()
     uses: JohnsonWang13/github_action_tools/.github/workflows/Send_message_to_slack.yml@master
     with:
       is_success: true
@@ -104,7 +104,7 @@ jobs:
      
   fail:
     needs: [export-env, screenshots]
-    if failure()
+    if: failure()
     uses: JohnsonWang13/github_action_tools/.github/workflows/Send_message_to_slack.yml@master
     with:
       is_success: false
