@@ -9,11 +9,6 @@ from PIL import Image
 # 取得這支 script 的資料夾
 script_dir = os.path.dirname(os.path.abspath(__file__))
 DST_DIR    = os.path.join(script_dir, '..', 'unknow_icons')  # 裁切後 icon 存放資料夾
-# 裁切框 (x, y, width, height)，根據實際 icon 在大圖位置調整
-CROP_X  = 150
-CROP_Y  = 160
-CROP_W  = 200
-CROP_H  = 70
 
 # 建立輸出資料夾（若不存在）
 os.makedirs(DST_DIR, exist_ok=True)
@@ -26,6 +21,11 @@ def main():
         'input_image',
         help='待裁切的大圖檔案路徑'
     )
+    parser.add_argument('--crop-x', type=int, default=165, help='裁切框 X 起始座標 (default: 165)')
+    parser.add_argument('--crop-y', type=int, default=185, help='裁切框 Y 起始座標 (default: 185)')
+    parser.add_argument('--crop-w', type=int, default=170, help='裁切框寬度 (default: 170)')
+    parser.add_argument('--crop-h', type=int, default=56,  help='裁切框高度 (default: 56)')
+
     args = parser.parse_args()
 
     input_path = args.input_image
@@ -37,7 +37,7 @@ def main():
         print(f"[ERROR] 無法開啟圖片：{input_path}, {e}")
         return
 
-    box = (CROP_X, CROP_Y, CROP_X + CROP_W, CROP_Y + CROP_H)
+    box = (args.crop_x, args.crop_y, args.crop_x + args.crop_w, args.crop_y + args.crop_h)
     cropped = img.crop(box)
 
     # 輸出檔名加上 _icon

@@ -29,7 +29,7 @@ async def take_screenshots(email: str, password: str):
         await page.wait_for_selector('.carousel-container', timeout=10000)
         print(f"[Screenshot] 已導航至 {HOME_URL} 並偵測到 carousel-container")
         
-        await page.wait_for_timeout(500)
+        await page.wait_for_timeout(2000)
         
         selector = (
             'div.bg_sbds-background-color-dark'
