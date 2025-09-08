@@ -4,6 +4,8 @@ import argparse
 import os
 from playwright.async_api import async_playwright
 from login import launch_and_login, HOME_URL
+from observe_banner_rotations import observe_banner_rotations
+from datetime import datetime
 
 # 取得這支 script 的資料夾
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,20 +19,19 @@ MAX_SLIDES = 50
 async def take_screenshots(email: str, password: str):
     print("[Screenshot] 啟動 Playwright 自動化")
     async with async_playwright() as p:
-        # 執行登入
+        # 登入
         page = await launch_and_login(email=email, password=password)
         print("[Screenshot] 登入完成，開始截圖流程。")
-        
+
         await page.set_viewport_size({"width": 1280, "height": 800})
         print("[Screenshot] 已設定視窗大小為 1280x800")
 
-        # 前往首頁並等待 carousel 容器出現
         await page.goto(HOME_URL)
         await page.wait_for_selector('.carousel-container', timeout=10000)
         print(f"[Screenshot] 已導航至 {HOME_URL} 並偵測到 carousel-container")
-        
+
         await page.wait_for_timeout(2000)
-        
+
         selector = (
             'div.bg_sbds-background-color-dark'
             '.h_0'
@@ -43,29 +44,34 @@ async def take_screenshots(email: str, password: str):
             print("[Screenshot] 偵測 Header 中沒有 ShopBack Extension")
             y_offset = 0
 
-        # 定位第一個 carousel-container
+        # 計算輪播張數
         wrapper = page.locator('.carousel-container').first
-        print("[Screenshot] 定位 carousel-container 區塊")
-
-        # 計算輪播項目的數量（每個 banner 一個 div）
         img_count = await wrapper.locator('> div[data-ui-element-name="hero banner"]').count()
         print(f"[Screenshot] 輪播中共偵測到 {img_count} 個 banner 項目")
 
-        # 依照圖片數進行截圖，等候自動輪播切換
-        for idx in range(img_count):
-            if idx > 0:
-                print(f"[Screenshot] 等待自動輪播切換 ({ROTATION_INTERVAL}ms)")
-                await page.wait_for_timeout(ROTATION_INTERVAL)
-            filename = os.path.join(OUTPUT_DIR, f"banner_{idx+1}.png")
-            print(f"[Screenshot] 截圖第 {idx+1} 張圖片: {filename}")
+        # 定義 callback：每次切換完成就截圖
+        async def on_switch(call_index: int, current_index: int):
+            filename = os.path.join(OUTPUT_DIR, f"banner_{call_index}.png")
+            print(f"[Screenshot] 觸發第 {call_index} 次（索引 {current_index}）→ 截圖：{filename}")
             await page.screenshot(path=filename, clip={
                 "x": 0,
                 "y": y_offset,
                 "width": await page.evaluate("() => window.innerWidth"),
-                "height": await page.evaluate("() => window.innerHeight") - y_offset
+                "height": (await page.evaluate("() => window.innerHeight")) - y_offset
             })
 
-        # 關閉瀏覽器
+        # 觀察並觸發截圖：
+        # - include_initial=True：先對目前第一張也截 1 次
+        # - max_switches=img_count：總共觸發 img_count 次（含第一張）
+        await observe_banner_rotations(
+            page,
+            on_switch,
+            max_switches=img_count,
+            include_initial=True,
+            stable_frames=10,
+            velocity_eps=0.5,
+        )
+
         await page.context.close()
         print("[Screenshot] 截圖流程結束，瀏覽器已關閉。")
 
