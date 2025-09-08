@@ -99,6 +99,7 @@ jobs:
     with:
       is_success: true
       channel_id: ${{ needs.export-env.outputs.slack-channel-id }}
+      notify_user: 'chuen1010'
     secrets:
       SLACK_BOT_OAUTH_TOKEN: ${{ secrets.SLACK_BOT_OAUTH_TOKEN }}
      
@@ -109,5 +110,6 @@ jobs:
     with:
       is_success: false
       channel_id: ${{ needs.export-env.outputs.slack-channel-id }}
+      notify_user: 'chuen1010'
     secrets:
       SLACK_BOT_OAUTH_TOKEN: ${{ secrets.SLACK_BOT_OAUTH_TOKEN }}
