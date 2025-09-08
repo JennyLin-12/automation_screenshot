@@ -2,6 +2,12 @@ name: CI Test
 
 on:
   workflow_dispatch:
+    inputs:
+      notify_user_group:
+        type: string
+
+      notify_user:
+        type: string
   
 run-name: CI-Test
 
@@ -33,6 +39,7 @@ jobs:
     with:
       is_success: false
       channel_id: ${{ needs.export-env.outputs.slack-channel-id }}
-      notify_user: 'chuen1010@gmail.com'
+      notify_user_group: ${{ inputs.notify_user_group }}
+      notify_user: ${{ inputs.notify_user }}
     secrets:
       SLACK_BOT_OAUTH_TOKEN: ${{ secrets.SLACK_BOT_OAUTH_TOKEN }}
