@@ -40,11 +40,14 @@ jobs:
           token_base64: ${{ secrets.GOOGLE_TOKEN_PICKLE }}
           download_path: ./icons
           
-      - name: Cache Playwright user data
-        uses: actions/cache@v4
-        with:
-          path: state.json
-          key: ${{ runner.os }}-playwright-state-json
+      - name: Create state.json from Secret
+        run: echo "${{ secrets.STATE_JSON }}" > state.json
+          
+#      - name: Cache Playwright user data
+#        uses: actions/cache@v4
+#        with:
+#          path: state.json
+#          key: ${{ runner.os }}-playwright-state-json
 
       - name: Capture banner screenshots
         run: |
