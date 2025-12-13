@@ -28,9 +28,7 @@ jobs:
         
       - name: Create state.json from Secret
         run: |
-          cat << EOF > state.json
-          ${{ secrets.STATE_JSON }}
-          EOF
+          echo "${{ secrets.STATE_BASE64 }}" | base64 -d > state.json
           
 #      - name: Cache Playwright user data
 #        uses: actions/cache@v4
