@@ -24,13 +24,8 @@ jobs:
         uses: ./.github/actions/font-setup
         
       - name: Create state.json from Secret
-        run: echo "${{ secrets.STATE_JSON }}" > state.json
-          
-#      - name: Cache Playwright user data
-#        uses: actions/cache@v4
-#        with:
-#          path: state.json
-#          key: ${{ runner.os }}-playwright-state-json
+        run: |
+          echo "${{ secrets.STATE_JSON }}" | base64 -d > state.json
 
       - name: Capture rewards_section screenshots
         run: |
