@@ -24,5 +24,6 @@ runs:
           ${{ runner.os }}-playwright-browsers-
       
     - name: Install Playwright browsers
+      if: steps.cache-playwright.outputs.cache-hit != 'true'
       run: playwright install
       shell: bash
