@@ -1,0 +1,30 @@
+name: Keep Workflow Alive
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+jobs:
+  keep_alive:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+    - name: Keep Workflow Alive via REST API
+      run: |
+        curl -X PUT \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/${{ github.repository         }}/actions/workflows/keep_workflow_alive.yml/enable
+        
+        curl -X PUT \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/${{ github.repository         }}/actions/workflows/full_page_screenshots.yml/enable
+          
+        curl -X PUT \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/${{ github.repository         }}/actions/workflows/reward_section_screenshot.yml/enable
+          
+        curl -X PUT \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/${{ github.repository         }}/actions/workflows/screenshot_and_upload.yml/enable
