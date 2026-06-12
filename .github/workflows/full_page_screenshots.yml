@@ -3,65 +3,84 @@ name: Full page screenshots
 on:
   schedule:
     - cron: '15 22 * * *'
-    
+
   workflow_dispatch:
-  
+
 run-name: Full page screenshots
 
 jobs:
   screenshots:
     environment: ScreenshotAutomation
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Show runner public IP
         run: curl -s https://api.ipify.org
 
       - name: Setup Python
         uses: ./.github/actions/python-setup
-        
+
       - name: Setup Font
         uses: ./.github/actions/font-setup
-        
-      - name: Create state.json from Secret
-        run: |
-          echo "${{ secrets.STATE_JSON }}" | base64 -d > state.json
-        
+
+      - name: Restore Playwright state
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: ${{ runner.os }}-playwright-state-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-state-
+
       - name: Screenshot travel-deals page
         run: |
-            python executor/full_page_screenshot.py \
-            -u 'https://www.shopback.com.tw/travel-deals' \
-            -n 'campaign page_Travel' \
-            -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
-            -p "${{ secrets.SHOPBACK_PASSWORD }}"
-            
+          python executor/full_page_screenshot.py \
+          -u 'https://www.shopback.com.tw/travel-deals' \
+          -n 'campaign page_Travel' \
+          -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
+          -p "${{ secrets.SHOPBACK_PASSWORD }}"
+
       - name: Screenshot upsize--daily page
         run: |
-            python executor/full_page_screenshot.py \
-            -u 'https://www.shopback.com.tw/upsize--daily' \
-            -n 'web store listing' \
-            -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
-            -p "${{ secrets.SHOPBACK_PASSWORD }}"
-            
+          python executor/full_page_screenshot.py \
+          -u 'https://www.shopback.com.tw/upsize--daily' \
+          -n 'web store listing' \
+          -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
+          -p "${{ secrets.SHOPBACK_PASSWORD }}"
+
       - name: Screenshot new-merchants page
         run: |
-            python executor/full_page_screenshot.py \
-            -u 'https://www.shopback.com.tw/new-merchants' \
-            -n 'web_newmerchant' \
-            -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
-            -p "${{ secrets.SHOPBACK_PASSWORD }}"
+          python executor/full_page_screenshot.py \
+          -u 'https://www.shopback.com.tw/new-merchants' \
+          -n 'web_newmerchant' \
+          -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
+          -p "${{ secrets.SHOPBACK_PASSWORD }}"
 
       - name: Screenshot seemore-coupon page
         run: |
-            python executor/full_page_screenshot.py \
-            -u 'https://www.shopback.com.tw/seemore-coupon-20' \
-            -n 'web_coupon' \
-            -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
-            -p "${{ secrets.SHOPBACK_PASSWORD }}"
-            
+          python executor/full_page_screenshot.py \
+          -u 'https://www.shopback.com.tw/seemore-coupon-20' \
+          -n 'web_coupon' \
+          -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
+          -p "${{ secrets.SHOPBACK_PASSWORD }}"
+
+      - name: Save Playwright state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: ${{ runner.os }}-playwright-state-${{ github.run_id }}
+
+      - name: Upload debug screenshot on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-login-failure
+          path: debug_login_failure.png
+          if-no-files-found: ignore
+
       - name: Cache token.pickle
         id: cache-token
         uses: actions/cache@v4
@@ -70,7 +89,7 @@ jobs:
           key: token-cache-v1-${{ hashFiles('token.pickle') }}
           restore-keys: |
             token-cache-v1-
-          
+
       - name: Upload screenshots to Google Drive
         uses: ./.github/actions/uploadToGoogleDrive
         with:
@@ -78,7 +97,7 @@ jobs:
           folder_id: ${{ vars.OTHER_FOLDER_ID }}
           token_base64: ${{ secrets.GOOGLE_TOKEN_PICKLE }}
           local_folder: ./full_page_screenshot
-          
+
   export-env:
     runs-on: ubuntu-latest
     environment: ScreenshotAutomation
@@ -89,7 +108,7 @@ jobs:
       id: set-vars
       run: |
         echo "channel_id=${{ vars.SLACK_CHANNEL_ID }}" >> $GITHUB_OUTPUT
-            
+
   success:
     needs: [export-env, screenshots]
     if: success()
@@ -100,7 +119,7 @@ jobs:
       notify_user: 'chuen1010'
     secrets:
       SLACK_BOT_OAUTH_TOKEN: ${{ secrets.SLACK_BOT_OAUTH_TOKEN }}
-     
+
   fail:
     needs: [export-env, screenshots]
     if: failure()

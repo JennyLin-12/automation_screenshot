@@ -1,10 +1,8 @@
 import os
-import time
 import argparse
 import asyncio
 from datetime import datetime
 import pytz
-from playwright.async_api import async_playwright
 from login import launch_and_login, HOME_URL
 
 # 取得這支 script 的資料夾
@@ -33,10 +31,9 @@ async def capture_full_page_with_playwright(
     filename = f"{date_str}_{output_name}.png"
     output_path = f"{OUTPUT_DIR}/{filename}"
 
-    async with async_playwright() as p:
-        page = await launch_and_login(email=email, password=password)
+    async with launch_and_login(email=email, password=password) as page:
         print("[Screenshot] 登入完成，開始截圖流程。")
-        
+
         # 前往指定網址
         await page.goto(url)
         await asyncio.sleep(scroll_pause)
@@ -55,14 +52,12 @@ async def capture_full_page_with_playwright(
         total_height = await page.evaluate("() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)")
         # 設定 viewport 高度
         await page.set_viewport_size({"width": 1920, "height": total_height})
-        
+
         await asyncio.sleep(2)
 
         # full_page=True 會自動把整頁延展到 screenshot
         await page.screenshot(path=output_path, full_page=True)
-        print("[Screenshot] 截圖存到 {output_path}。")
-
-        await page.context.close()
+        print(f"[Screenshot] 截圖存到 {output_path}。")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

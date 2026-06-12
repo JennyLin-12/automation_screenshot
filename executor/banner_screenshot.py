@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 from typing import Callable, Awaitable, Optional
 
-from playwright.async_api import async_playwright, Page
+from playwright.async_api import Page
 from login import launch_and_login, HOME_URL
 
 # 取得這支 script 的資料夾
@@ -212,9 +212,7 @@ async def take_screenshots(email: str, password: str):
     print("[Screenshot] 啟動 Playwright 自動化")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    async with async_playwright() as p:
-        # 登入
-        page = await launch_and_login(email=email, password=password)
+    async with launch_and_login(email=email, password=password) as page:
         print("[Screenshot] 登入完成，開始截圖流程。")
 
         await page.set_viewport_size({"width": 1280, "height": 800})
@@ -281,7 +279,6 @@ async def take_screenshots(email: str, password: str):
             velocity_eps=0.5,
         )
 
-        await page.context.close()
         print("[Screenshot] 截圖流程結束，瀏覽器已關閉。")
 
 # =========================

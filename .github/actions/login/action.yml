@@ -1,5 +1,5 @@
 name: "Login to ShopBack"
-description: "Cache Playwright data and run the login script"
+description: "Restore cached Playwright state and run the login script, then save updated state"
 inputs:
   account:
     description: "ShopBack account email"
@@ -11,14 +11,20 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # 1. 快取 user_data 目錄，讓 Persistent Context 狀態可以跨次回復
-    - name: Cache Playwright user data
-      uses: actions/cache@v4
+    - name: Restore Playwright state
+      uses: actions/cache/restore@v4
       with:
         path: state.json
-        key: ${{ runner.os }}-playwright-state-json
-        
-    # 2. 執行 login.py 並帶入帳號密碼參數
+        key: ${{ runner.os }}-playwright-state-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-playwright-state-
+
     - name: Run Playwright login
       run: python executor/login.py -a ${{ inputs.account }} -p ${{ inputs.password }}
       shell: bash
+
+    - name: Save Playwright state
+      uses: actions/cache/save@v4
+      with:
+        path: state.json
+        key: ${{ runner.os }}-playwright-state-${{ github.run_id }}
