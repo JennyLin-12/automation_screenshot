@@ -15,12 +15,25 @@ async def is_logged_in(page: Page) -> bool:
     return not await page.is_visible("text=登入")
 
 
+async def dismiss_country_dialog(page: Page) -> None:
+    # CI runner 在美國，ShopBack 會彈出「確認國家/地區」dialog 詢問是否切換至美國站
+    # 直接點「繼續使用 台灣 網站」關掉它
+    try:
+        btn = page.locator('button:has-text("繼續使用")')
+        await btn.wait_for(state="visible", timeout=3000)
+        await btn.click()
+        print("🌏 已關閉國家/地區確認 dialog")
+    except Exception:
+        pass
+
+
 async def login_if_needed(context: BrowserContext, email: str, password: str) -> tuple[Page, bool]:
     if not email or not password:
         raise ValueError("必須提供 email 及 password，請使用 -a 和 -p 提供")
 
     page = await context.new_page()
     await page.goto(HOME_URL, wait_until="load", timeout=30000)
+    await dismiss_country_dialog(page)
 
     if await is_logged_in(page):
         print("✅ 已登入，跳過登入流程。")
@@ -28,6 +41,7 @@ async def login_if_needed(context: BrowserContext, email: str, password: str) ->
 
     print("🔐 未登入，開始登入...")
     await page.goto(LOGIN_URL, wait_until="networkidle", timeout=30000)
+    await dismiss_country_dialog(page)
 
     try:
         await page.wait_for_selector('input[type="email"]', timeout=15000)
