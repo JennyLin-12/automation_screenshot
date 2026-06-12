@@ -23,26 +23,15 @@ jobs:
       - name: Setup Font
         uses: ./.github/actions/font-setup
 
-      - name: Restore Playwright state
-        uses: actions/cache/restore@v4
-        with:
-          path: state.json
-          key: ${{ runner.os }}-playwright-state-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-state-
+      - name: Create state.json from Secret
+        run: |
+          echo "${{ secrets.STATE_JSON }}" | base64 -d > state.json
 
       - name: Capture rewards_section screenshots
         run: |
           python executor/rewards_section_screenshot.py \
           -a "${{ secrets.SHOPBACK_ACCOUNT }}" \
           -p "${{ secrets.SHOPBACK_PASSWORD }}"
-
-      - name: Save Playwright state
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: state.json
-          key: ${{ runner.os }}-playwright-state-${{ github.run_id }}
 
       - name: Upload debug screenshot on failure
         if: failure()

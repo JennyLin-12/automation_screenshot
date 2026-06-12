@@ -1,5 +1,5 @@
 name: "Login to ShopBack"
-description: "Restore cached Playwright state and run the login script, then save updated state"
+description: "Cache Playwright data and run the login script"
 inputs:
   account:
     description: "ShopBack account email"
@@ -11,20 +11,12 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Restore Playwright state
-      uses: actions/cache/restore@v4
+    - name: Cache Playwright user data
+      uses: actions/cache@v4
       with:
         path: state.json
-        key: ${{ runner.os }}-playwright-state-${{ github.run_id }}
-        restore-keys: |
-          ${{ runner.os }}-playwright-state-
+        key: ${{ runner.os }}-playwright-state-json
 
     - name: Run Playwright login
       run: python executor/login.py -a ${{ inputs.account }} -p ${{ inputs.password }}
       shell: bash
-
-    - name: Save Playwright state
-      uses: actions/cache/save@v4
-      with:
-        path: state.json
-        key: ${{ runner.os }}-playwright-state-${{ github.run_id }}
