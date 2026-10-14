@@ -3,6 +3,9 @@ import os
 import json
 import base64
 import argparse
+from pathlib import Path
+
+from banner_manifest import manifest_files
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -71,21 +74,47 @@ def upload_file_to_drive(drive, file_path, mime_type=None, parent_folder_id=None
         return None
 
 
-def upload_folder_to_drive(drive, folder_path, parent_folder_id=None):
-    """上傳整個資料夾內所有圖片檔案"""
-    print(f"[Upload] 掃描資料夾：{folder_path}")
+def get_upload_files(local_path, manifest_path=None):
+    """Select current-run banners, or preserve generic file/folder upload behavior."""
+    local_path = Path(local_path)
+    if manifest_path:
+        return manifest_files(local_path, manifest_path)
+    if local_path.is_dir():
+        return sorted(path for path in local_path.iterdir()
+                      if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS)
+    if local_path.is_file():
+        return [local_path]
+    raise ValueError(f'不是有效的檔案或資料夾：{local_path}')
+
+
+def upload_files_to_drive(drive, files, parent_folder_id=None):
     count = 0
-    for entry in os.listdir(folder_path):
-        full_path = os.path.join(folder_path, entry)
-        _, ext = os.path.splitext(entry)
-        if os.path.isfile(full_path) and ext.lower() in IMAGE_EXTENSIONS:
-            upload_file_to_drive(drive, full_path, parent_folder_id=parent_folder_id)
-            count += 1
-    print(f"[Upload] 完成，共上傳 {count} 張圖片")
+    for file_path in files:
+        if not upload_file_to_drive(drive, str(file_path), parent_folder_id=parent_folder_id):
+            raise RuntimeError(f'上傳失敗：{file_path.name}')
+        count += 1
+    print(f'[Upload] 完成，共上傳 {count} 張圖片')
+    return count
+
+
+def upload_folder_to_drive(drive, folder_path, parent_folder_id=None, manifest_path=None):
+    files = get_upload_files(folder_path, manifest_path)
+    return upload_files_to_drive(drive, files, parent_folder_id)
 
 
 def main(args):
     print("[Main] 啟動 Google Drive 上傳工具")
+
+    # Validate paths before credential handling or any network access.
+    files = get_upload_files(args.local_path, getattr(args, 'manifest', None))
+    if getattr(args, 'dry_run', False):
+        for path in files:
+            print(f'[Dry-run] {path}')
+        print(f'[Dry-run] 共 {len(files)} 張；未認證、未上傳')
+        return files
+
+    if not args.credentials_json:
+        raise ValueError('實際上傳必須提供 --credentials-json')
 
     if args.token_base64:
         if os.path.exists('token.pickle'):
@@ -113,20 +142,12 @@ def main(args):
         print(f"[Main] ❌ 建立 Drive client 失敗：{e}")
         return
 
-    # 檔案或資料夾上傳
-    if os.path.isdir(args.local_path):
-        print(f"[Main] 偵測到資料夾：{args.local_path}，將上傳所有圖片")
-        upload_folder_to_drive(drive, args.local_path, parent_folder_id=args.drive_folder_id)
-    elif os.path.isfile(args.local_path):
-        print(f"[Main] 偵測到單一檔案：{args.local_path}，開始上傳")
-        upload_file_to_drive(drive, args.local_path, parent_folder_id=args.drive_folder_id)
-    else:
-        print(f"[Main] ❌ 錯誤：'{args.local_path}' 不是有效的檔案或資料夾")
+    return upload_files_to_drive(drive, files, parent_folder_id=args.drive_folder_id)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Upload a file or all images in a folder to Google Drive")
-    parser.add_argument('-j', '--credentials-json', required=True,
+    parser.add_argument('-j', '--credentials-json',
                         help="OAuth2 or service account JSON string")
     parser.add_argument('-l', '--local-path', dest='local_path', required=True,
                         help='Local file or folder path to upload')
@@ -136,5 +157,7 @@ if __name__ == '__main__':
                         help="Interpret credentials JSON as a service account key")
     parser.add_argument('--token-base64', default=None,
                         help="(Optional) Base64-encoded token.pickle content")
+    parser.add_argument('--manifest', help='Upload only files listed in a completed banner manifest')
+    parser.add_argument('--dry-run', action='store_true', help='List selected files without authentication or upload')
     args = parser.parse_args()
     main(args)

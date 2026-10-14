@@ -32,14 +32,6 @@ jobs:
           restore-keys: |
             token-cache-v1-
 
-      - name: Download icons from google drive
-        uses: ./.github/actions/downloadFromGoogleDrive
-        with:
-          credential_json: ${{ secrets.GOOGLE_CREDENTIAL_JSON }}
-          folder_id: ${{ vars.ICON_FOLDER_ID }}
-          token_base64: ${{ secrets.GOOGLE_TOKEN_PICKLE }}
-          download_path: ./icons
-
       - name: Create state.json from Secret
         run: |
           echo "${{ secrets.STATE_JSON }}" | base64 -d > state.json
@@ -58,25 +50,14 @@ jobs:
           path: debug_login_failure.png
           if-no-files-found: ignore
 
-      - name: Rename banners
-        run: |
-          python executor/rename_banner.py
-
-      - name: Upload renamed banners to Google Drive
+      - name: Upload captured banners to Google Drive
         uses: ./.github/actions/uploadToGoogleDrive
         with:
           credential_json: ${{ secrets.GOOGLE_CREDENTIAL_JSON }}
           folder_id: ${{ vars.BANNER_FOLDER_ID }}
           token_base64: ${{ secrets.GOOGLE_TOKEN_PICKLE }}
-          local_folder: ./rename_banners
-
-      - name: Upload unknown icons to Google Drive
-        uses: ./.github/actions/uploadToGoogleDrive
-        with:
-          credential_json: ${{ secrets.GOOGLE_CREDENTIAL_JSON }}
-          folder_id: ${{ vars.UNKNOWNICON_FOLDER_ID }}
-          token_base64: ${{ secrets.GOOGLE_TOKEN_PICKLE }}
-          local_folder: ./unknow_icons
+          local_folder: ./banners
+          manifest_path: ./banners/manifest.json
 
   export-env:
     runs-on: ubuntu-latest

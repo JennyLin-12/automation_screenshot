@@ -14,6 +14,11 @@ inputs:
     description: "Local folder to be uploaded"
     required: true
 
+  manifest_path:
+    description: "Optional completed banner manifest to select this run's images"
+    required: false
+    default: ''
+
 runs:
   using: 'composite'
   steps:
@@ -23,5 +28,8 @@ runs:
         -j '${{ inputs.credential_json }}' \
         -f "${{ inputs.folder_id }}" \
         --token-base64 "${{ inputs.token_base64 }}" \
-        -l "${{ inputs.local_folder }}"
+        -l "${{ inputs.local_folder }}" \
+        --manifest "$UPLOAD_MANIFEST_PATH"
+      env:
+        UPLOAD_MANIFEST_PATH: ${{ inputs.manifest_path }}
       shell: bash

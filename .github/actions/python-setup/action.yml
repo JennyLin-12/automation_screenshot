@@ -16,14 +16,14 @@ runs:
       shell: bash
 
     - name: Cache Playwright browsers
+      id: cache-playwright
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
-        key: ${{ runner.os }}-playwright-browsers-${{ hashFiles('**/playwright.config.*',   '**/package-lock.json', '**/yarn.lock') }}
+        key: ${{ runner.os }}-playwright-browsers-${{ hashFiles('requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-playwright-browsers-
-      
+
     - name: Install Playwright browsers
-      if: steps.cache-playwright.outputs.cache-hit != 'true'
-      run: playwright install
+      run: playwright install --with-deps chromium
       shell: bash
