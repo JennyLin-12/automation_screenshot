@@ -40,6 +40,18 @@ class UploadTests(unittest.TestCase):
         self.assertEqual(media.mimetype(), 'image/png')
         drive.files.return_value.create.assert_called_once()
 
+    def test_unnamed_banner_is_passed_to_upload_by_asset_id(self):
+        filename = '2026_1014_web_banner_101.png'
+        (self.folder / filename).write_bytes(b'unnamed current image')
+        self.data['banners'][0].update(brand=None, filename=filename, brand_source='asset_id')
+        self.save_manifest()
+        drive = Mock()
+        drive.files.return_value.create.return_value.execute.return_value = {'id': 'mock-file-id'}
+        self.assertEqual(uploader.upload_folder_to_drive(drive, self.folder, 'mock-folder', self.manifest), 1)
+        call = drive.files.return_value.create.call_args
+        self.assertEqual(call.kwargs['body']['name'], filename)
+        self.assertEqual(Path(call.kwargs['media_body']._filename), self.folder / filename)
+
     def test_dry_run_never_authenticates_or_uploads(self):
         args = argparse.Namespace(local_path=self.folder, manifest=self.manifest, dry_run=True,
                                   credentials_json=None, token_base64='must not decode')

@@ -1,4 +1,6 @@
 import asyncio
+import io
+from contextlib import redirect_stdout
 import json
 import sys
 import tempfile
@@ -6,7 +8,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'executor'))
-from banner_capture import SNAPSHOT_JS, banner_filename, capture_banners
+from banner_capture import SNAPSHOT_JS, banner_filename, capture_banners, resolve_banner
 from rename_banner import rename_banners
 
 
@@ -83,11 +85,46 @@ class CaptureTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(ValueError):
                 rename_banners(tmp, Path(tmp) / 'upload')
 
-    async def test_missing_brand_fails_instead_of_guessing(self):
+    async def test_missing_brand_uses_asset_id_and_finishes(self):
         a = item(brand=None)
-        with tempfile.TemporaryDirectory() as tmp:
-            with self.assertRaises(ValueError):
-                await capture_banners(FakePage([a], [a]), tmp)
+        log = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, redirect_stdout(log):
+            entries = await capture_banners(FakePage([a], [a]), tmp, date_str='2026_1015',
+                                            poll_seconds=0, timeout_seconds=1)
+            self.assertEqual(entries[0]['filename'], '2026_1015_web_banner_101.png')
+            self.assertIsNone(entries[0]['brand'])
+            self.assertEqual(entries[0]['brand_source'], 'asset_id')
+            self.assertEqual(rename_banners(tmp, Path(tmp) / 'upload'), [entries[0]['filename']])
+            self.assertTrue(json.loads((Path(tmp) / 'manifest.json').read_text())['complete'])
+        self.assertIn('[WARN]', log.getvalue())
+        self.assertIn('asset_id=101', log.getvalue())
+
+    def test_name_source_priority_and_whitespace(self):
+        cases = [
+            ({'brand': ' 蝦皮 ', 'asset_name': 'Other'}, '蝦皮', 'data-merchant-name'),
+            ({'brand': None, 'asset_name': 'Klook_2026-10-15_web_homepage_hero_banner',
+              'image_alt': 'Other'}, 'Klook', 'data-asset-name'),
+            ({'brand': ' ', 'asset_name': ' ',
+              'image_alt': 'Apple Music_2026-10-15_web_homepage_hero_banner'}, 'Apple Music', 'img.alt'),
+            ({'brand': None, 'asset_name': 'Travel campaign'}, 'Travel campaign', 'data-asset-name'),
+            ({'brand': None, 'asset_name': None, 'image_alt': ' '}, None, 'asset_id'),
+        ]
+        for record, name, source in cases:
+            with self.subTest(record=record):
+                resolved = resolve_banner(record)
+                self.assertEqual(resolved['brand'], name)
+                self.assertEqual(resolved['brand_source'], source)
+
+    async def test_capture_and_manifest_accept_asset_name_or_alt_fallback(self):
+        for field, source in [('asset_name', 'data-asset-name'), ('image_alt', 'img.alt')]:
+            a = item(brand=None)
+            a[field] = 'Klook_2026-10-15_web_homepage_hero_banner'
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as tmp:
+                entries = await capture_banners(FakePage([a], [a]), tmp, date_str='2026_1015',
+                                                poll_seconds=0, timeout_seconds=1)
+                self.assertEqual(entries[0]['filename'], '2026_1015_web_banner_Klook_101.png')
+                self.assertEqual(entries[0]['brand_source'], source)
+                self.assertEqual(rename_banners(tmp, Path(tmp) / 'upload'), [entries[0]['filename']])
 
     def test_filename_sanitizes_paths_and_preserves_brand(self):
         self.assertEqual(banner_filename('IHG Hotels & Resorts 洲際酒店集團', '123', '2026_1014'),
@@ -155,17 +192,24 @@ class BrowserGeometryTests(unittest.IsolatedAsyncioTestCase):
                     data-merchant-name="蝦皮" data-asset-id="101" data-feature-position="1">
                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'/%3E"></div>
                   <div class="slide" style="background:lime" data-ui-element-name="hero banner"
-                    data-merchant-name="蝦皮" data-asset-id="102" data-feature-position="2">
+                    data-asset-id="102" data-feature-position="2">
+                    <img alt="Klook_2026-10-15_web_homepage_hero_banner" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'/%3E"></div>
+                  <div class="slide" style="background:blue" data-ui-element-name="hero banner"
+                    data-asset-id="103" data-feature-position="3">
                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'/%3E"></div>
                   </div></div><script>let i=0;setInterval(()=>{
-                    i=1-i;document.querySelector('.carousel-container').style.transform=`translateX(${-1280*i}px)`;
+                    i=(i+1)%3;document.querySelector('.carousel-container').style.transform=`translateX(${-1280*i}px)`;
                   },600)</script>""")
                 with tempfile.TemporaryDirectory() as tmp:
                     entries = await capture_banners(page, tmp, timeout_seconds=5, poll_seconds=0.02)
                     target = Path(tmp) / 'upload'
                     rename_banners(tmp, target)
-                    self.assertEqual(len(entries), 2)
-                    expected = {'101': (255, 0, 0), '102': (0, 255, 0)}
+                    self.assertEqual(len(entries), 3)
+                    self.assertEqual(entries[1]['brand'], 'Klook')
+                    self.assertEqual(entries[1]['brand_source'], 'img.alt')
+                    self.assertIsNone(entries[2]['brand'])
+                    self.assertTrue(entries[2]['filename'].endswith('_web_banner_103.png'))
+                    expected = {'101': (255, 0, 0), '102': (0, 255, 0), '103': (0, 0, 255)}
                     for entry in entries:
                         with Image.open(target / entry['filename']) as img:
                             self.assertEqual(img.getpixel((500, 400))[:3], expected[entry['asset_id']])

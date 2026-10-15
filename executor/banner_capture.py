@@ -29,6 +29,7 @@ SNAPSHOT_JS = r"""
       brand: el.getAttribute('data-merchant-name'),
       asset_id: el.getAttribute('data-asset-id'),
       asset_name: el.getAttribute('data-asset-name'),
+      image_alt: images.map(img => img.getAttribute('alt')).find(alt => alt && alt.trim()) || null,
       rect: [r.x, r.y, r.width, r.height, box.x, box.y, box.width, box.height],
       distance: Math.abs((r.left + r.right) / 2 - center),
       visible: overlap > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none',
@@ -44,15 +45,44 @@ SNAPSHOT_JS = r"""
 def banner_filename(brand, asset_id, date_str):
     if not isinstance(date_str, str) or not re.fullmatch(r'[0-9]{4}_[0-9]{4}', date_str):
         raise ValueError('Banner 日期格式必須是 YYYY_MMDD')
-    if not isinstance(brand, str) or not brand.strip():
-        raise ValueError('Banner 缺少 data-merchant-name，不能猜測品牌')
     if not isinstance(asset_id, str) or not re.fullmatch(r'[0-9]+', asset_id):
         raise ValueError('Banner 缺少有效 data-asset-id')
     # Keep Chinese, spaces and punctuation, replacing characters unsafe in filenames.
-    brand = re.sub(r'[<>:"/\\|?*\x00-\x1f\x7f]', '_', brand).strip().rstrip('. ')
-    if not brand:
-        raise ValueError('Banner 品牌名稱無法用於檔名')
-    return f'{date_str}_web_banner_{brand}_{asset_id}.png'
+    brand = re.sub(r'[<>:"/\\|?*\x00-\x1f\x7f]', '_', brand or '').strip().rstrip('. ')
+    label = f'{brand}_{asset_id}' if brand else asset_id
+    return f'{date_str}_web_banner_{label}.png'
+
+
+def resolve_banner(record):
+    """Use explicit DOM metadata; an unnamed banner still has a stable asset ID."""
+    result = dict(record)
+    candidates = (('brand', 'data-merchant-name'), ('asset_name', 'data-asset-name'),
+                  ('image_alt', 'img.alt'))
+    result['brand'] = None
+    result['brand_source'] = 'asset_id'
+    result.setdefault('image_alt', None)
+    for key, source in candidates:
+        value = record.get(key)
+        if not isinstance(value, str) or not value.strip():
+            continue
+        value = value.strip()
+        if key != 'brand':
+            value = re.sub(r'_\d{4}-\d{2}-\d{2}_web_homepage_hero_banner$', '', value,
+                           flags=re.IGNORECASE).strip()
+        if not value.rstrip('. '):
+            continue
+        result['brand'] = value
+        result['brand_source'] = source
+        break
+    return result
+
+
+async def read_snapshot(page):
+    snapshot = await page.evaluate(SNAPSHOT_JS)
+    if not snapshot:
+        return None
+    return {'items': [resolve_banner(record) for record in snapshot['items']],
+            'active': resolve_banner(snapshot['active']) if snapshot['active'] else None}
 
 
 def same_frame(before, after, epsilon=0.5):
@@ -79,13 +109,18 @@ async def capture_banners(page, output_dir, *, y_offset=0, timeout_seconds=180,
     date_str = date_str or datetime.now(ZoneInfo('Asia/Taipei')).strftime('%Y_%m%d')
     entries = []
     write_manifest(output_dir, entries, False)
-    first = await page.evaluate(SNAPSHOT_JS)
+    first = await read_snapshot(page)
     if not first or not first['items']:
         raise RuntimeError('找不到 hero banner 輪播')
     expected = set()
     for item in first['items']:
         banner_filename(item['brand'], item['asset_id'], date_str)
         expected.add(item['asset_id'])
+        if item['brand_source'] != 'data-merchant-name':
+            detail = (f"使用 {item['brand_source']}：{item['brand']}" if item['brand']
+                      else '無可用名稱，僅使用素材 ID 命名')
+            print(f"[WARN] Banner asset_id={item['asset_id']} position={item['position']} "
+                  f"缺少 data-merchant-name；{detail}")
     if len(expected) > MAX_SLIDES:
         raise RuntimeError(f'Banner 數量超過安全上限 {MAX_SLIDES}')
     captured = set()
@@ -94,7 +129,7 @@ async def capture_banners(page, output_dir, *, y_offset=0, timeout_seconds=180,
         previous = None
         stable = 0
         while captured != expected:
-            snapshot = await page.evaluate(SNAPSHOT_JS)
+            snapshot = await read_snapshot(page)
             if not snapshot or {item['asset_id'] for item in snapshot['items']} != expected:
                 raise RuntimeError('截圖期間 banner 清單已變動，請重新執行')
             active = snapshot['active']
@@ -110,12 +145,12 @@ async def capture_banners(page, output_dir, *, y_offset=0, timeout_seconds=180,
                     'x': 0, 'y': y_offset, 'width': viewport['width'],
                     'height': viewport['height'] - y_offset,
                 })
-                after = await page.evaluate(SNAPSHOT_JS)
+                after = await read_snapshot(page)
                 # The carousel may advance while Playwright takes the screenshot.
                 if after and same_frame(active, after['active']):
                     (output_dir / filename).write_bytes(png)
                     entries.append({key: active[key] for key in
-                                    ('asset_id', 'brand', 'position', 'dom_index', 'asset_name')}
+                                    ('asset_id', 'brand', 'brand_source', 'position', 'dom_index', 'asset_name', 'image_alt')}
                                    | {'filename': filename, 'capture_date': date_str, 'captured_at': datetime.now(
                                        ZoneInfo('Asia/Taipei')).isoformat()})
                     captured.add(active['asset_id'])
